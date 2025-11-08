@@ -14,16 +14,18 @@ const copyrightHeader = `/**
 
 const dir = "./";
 
-for await (const entry of walk(dir, {
-  exts: [".ts", ".tsx"],
-  includeDirs: false,
-  skip: [/node_modules/, /copyright\.ts$/],
-})) {
-  const filePath = entry.path;
-  const content = await Deno.readTextFile(filePath);
+for await (
+	const entry of walk(dir, {
+		exts: [".ts", ".tsx"],
+		includeDirs: false,
+		skip: [/node_modules/, /copyright\.ts$/],
+	})
+) {
+	const filePath = entry.path;
+	const content = await Deno.readTextFile(filePath);
 
-  if (!content.startsWith(copyrightHeader)) {
-    await Deno.writeTextFile(filePath, copyrightHeader + "\n" + content);
-    console.log(`Added header to ${filePath}`);
-  }
+	if (!content.startsWith(copyrightHeader)) {
+		await Deno.writeTextFile(filePath, copyrightHeader + "\n" + content);
+		console.log(`Added header to ${filePath}`);
+	}
 }
