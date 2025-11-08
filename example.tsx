@@ -4,7 +4,7 @@
  */
 
 import { createRouter } from "cobweb/routing";
-import { Defer, render } from "cobweb/jsx-runtime";
+import { Defer } from "cobweb/jsx-runtime";
 
 interface Todo {
 	id: string;
@@ -27,27 +27,6 @@ async function* fetchTodos(): AsyncGenerator<Todo> {
 	}
 }
 
-const Layout = (props: { title: string; children: any }) => (
-	<html lang="en">
-		<head>
-			<meta charset="utf-8" />
-			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-			<title>{props.title}</title>
-			<style>
-				{`
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-          font-family: system-ui, sans-serif;
-          max-width: 600px;
-          margin: 2rem auto;
-          padding: 0 1rem;
-        }`}
-			</style>
-		</head>
-		<body>{props.children}</body>
-	</html>
-);
-
 const TodoList = async function* (): AsyncGenerator<any> {
 	yield <div class="loading">Loading todos...</div>;
 
@@ -63,17 +42,16 @@ const TodoList = async function* (): AsyncGenerator<any> {
 const app = createRouter();
 
 app.get("/", async (ctx) => {
-	const { html } = ctx;
+	const { stream: html } = ctx;
 
-	await render(
-		<Layout title="Todo App">
+	await (
+		<>
 			<h1>My Todos</h1>
 			<Defer>
 				<TodoList />
 			</Defer>
-		</Layout>,
-		html.chunks,
-	);
+		</>
+	)(html.chunks);
 
 	return html.response;
 });

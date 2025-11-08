@@ -16,3 +16,4 @@ applications
 - [ ] interactives structures and dynamic data visibility toggling via modern
       css features
 - [ ] only use html streaming shenanigans for noscript environments
+- [ ] reactivity

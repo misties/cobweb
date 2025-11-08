@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { HtmlStream } from "./http.ts";
-import { Promisable } from "./utils.ts";
+import { DataStream } from "./http.ts";
 
 export interface Context<Params = Record<string, string>> {
 	readonly request: Request;
@@ -12,7 +11,7 @@ export interface Context<Params = Record<string, string>> {
 	readonly method: string;
 	readonly params: Params;
 	readonly pattern: URLPatternResult;
-	readonly html: HtmlStream;
+	readonly stream: DataStream;
 	readonly signal: AbortSignal;
 	state: Map<string | symbol, unknown>;
 }
@@ -20,7 +19,7 @@ export interface Context<Params = Record<string, string>> {
 export async function createContext<P = Record<string, string>>(
 	request: Request,
 	pattern: URLPatternResult,
-	html: HtmlStream,
+	stream: DataStream,
 ): Promise<Context<P>> {
 	return {
 		request,
@@ -28,18 +27,18 @@ export async function createContext<P = Record<string, string>>(
 		method: request.method,
 		params: (pattern.pathname.groups || {}) as P,
 		pattern,
-		html,
+		stream: stream,
 		signal: request.signal,
 		state: new Map(),
 	};
 }
 
 export interface Handler<P = Record<string, string>> {
-	(ctx: Context<P>): Promisable<Response | void>;
+	(ctx: Context<P>): Promise<Response | void>;
 }
 
 export interface Middleware {
-	(ctx: Context, next: () => Promise<Response>): Promisable<Response>;
+	(ctx: Context, next: () => Promise<Response>): Promise<Response>;
 }
 
 export function compose(

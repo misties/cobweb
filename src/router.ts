@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { createHtmlStream } from "./http.ts";
+import { createDataStream } from "./http.ts";
 import { compose, createContext, Handler, Middleware } from "./middleware.ts";
 
 // why is Request["method"] a bare `string` oh my lord kill me
@@ -117,8 +117,8 @@ export function createRouter(namespace?: string): Router {
 				const match = route.pattern.exec(request.url);
 				if (!match) continue;
 
-				const html = await createHtmlStream();
-				const ctx = await createContext(request, match, html);
+				const stream = await createDataStream();
+				const ctx = await createContext(request, match, stream);
 
 				return (
 					(await compose(middlewares, route.handler)(ctx)) ||

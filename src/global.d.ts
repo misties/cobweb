@@ -5,14 +5,13 @@
 
 /// <reference types="cobweb/jsx-runtime" />
 
-import type { JsxElement } from "cobweb/jsx-runtime";
+import type { Component } from "cobweb/jsx-runtime";
 
 type HTMLAttributeMap<T = HTMLElement> = Partial<
 	Omit<T, keyof Element | "children" | "style"> & {
 		style?: string;
 		class?: string;
 		children?: any;
-		charset?: string;
 		[key: `data-${string}`]: string | number | boolean | null | undefined;
 		[key: `aria-${string}`]: string | number | boolean | null | undefined;
 	}
@@ -20,7 +19,10 @@ type HTMLAttributeMap<T = HTMLElement> = Partial<
 
 declare global {
 	namespace JSX {
-		type Element = JsxElement;
+		export type ElementType =
+			| keyof IntrinsicElements
+			| Component<any>
+			| ((props: any) => AsyncGenerator<any, any, any>);
 
 		export interface ElementChildrenAttribute {
 			// deno-lint-ignore ban-types

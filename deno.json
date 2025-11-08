@@ -17,7 +17,7 @@
 		}
 	},
 	"compilerOptions": {
-		"jsx": "react-jsx",
+		"jsx": "precompile",
 		"jsxImportSource": "cobweb",
 		"lib": ["deno.ns", "esnext", "dom", "dom.iterable"]
 	}
