@@ -5,6 +5,7 @@
 
 import { createRouter } from "cobweb/routing";
 import { Defer } from "cobweb/jsx-runtime";
+import { computed, effect, signal } from "cobweb/signals.ts";
 
 interface Todo {
 	id: string;
@@ -61,3 +62,16 @@ app.get("/meow/:test?", async (ctx) => {
 });
 
 Deno.serve({ port: 8000 }, app.fetch);
+
+const count = signal(1);
+const doubleCount = computed(() => count() * 2);
+
+effect(() => {
+	console.log(`Count is: ${count()}`);
+});
+
+console.log(doubleCount());
+
+count(2);
+
+console.log("meow", doubleCount());

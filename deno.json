@@ -4,6 +4,7 @@
 		"cobweb/": "./src/",
 		"cobweb/routing": "./src/router.ts",
 		"cobweb/helpers": "./src/helpers.ts",
+		"cobweb/signals": "./src/signals.ts",
 		"cobweb/jsx-runtime": "./src/jsx.ts"
 	},
 	"fmt": {
