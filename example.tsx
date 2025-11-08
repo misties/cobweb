@@ -5,7 +5,7 @@
 
 import { createRouter } from "cobweb/routing";
 import { Defer } from "cobweb/jsx-runtime";
-import { computed, effect, signal } from "cobweb/signals.ts";
+import { setupDeferredRoutes } from "cobweb/isolation.ts";
 
 interface Todo {
 	id: string;
@@ -42,19 +42,23 @@ const TodoList = async function* (): AsyncGenerator<any> {
 
 const app = createRouter();
 
-app.get("/", async (ctx) => {
-	const { stream: html } = ctx;
+setupDeferredRoutes(app);
 
+app.get("/", async (ctx) => {
 	await (
 		<>
 			<h1>My Todos</h1>
 			<Defer>
 				<TodoList />
 			</Defer>
+			<Defer>
+				<TodoList />
+			</Defer>
 		</>
-	)(html.chunks);
+	)(ctx);
 
-	return html.response;
+	ctx.stream.close();
+	return ctx.stream.response;
 });
 
 app.get("/meow/:test?", async (ctx) => {
@@ -62,16 +66,3 @@ app.get("/meow/:test?", async (ctx) => {
 });
 
 Deno.serve({ port: 8000 }, app.fetch);
-
-const count = signal(1);
-const doubleCount = computed(() => count() * 2);
-
-effect(() => {
-	console.log(`Count is: ${count()}`);
-});
-
-console.log(doubleCount());
-
-count(2);
-
-console.log("meow", doubleCount());

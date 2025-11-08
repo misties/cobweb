@@ -62,10 +62,13 @@ interface BaseRouter {
 		handler: Handler<HandlerParams<P>>,
 	): P;
 
-	fetch: (request: Request) => Promise<Response>;
+	fetch: (
+		request: Request,
+		info: Deno.ServeHandlerInfo<Deno.NetAddr>,
+	) => Promise<Response>;
 }
 
-type Router =
+export type Router =
 	& BaseRouter
 	& {
 		[M in Method as Lowercase<M>]: <
@@ -80,14 +83,14 @@ export function createRouter(namespace?: string): Router {
 	const routes: Route[] = [];
 	const middlewares: Middleware[] = [];
 
-	const router: BaseRouter = {
+	const r: BaseRouter = {
 		routes,
 		middlewares,
 		namespace,
 
 		use(...mw: Middleware[]) {
 			middlewares.push(...mw);
-			return router;
+			return r;
 		},
 
 		on<P extends string | TypedURLPattern<any> | URLPattern>(
@@ -108,7 +111,10 @@ export function createRouter(namespace?: string): Router {
 			return path;
 		},
 
-		async fetch(request: Request): Promise<Response> {
+		async fetch(
+			request: Request,
+			info: Deno.ServeHandlerInfo<Deno.NetAddr>,
+		): Promise<Response> {
 			const method = request.method.toUpperCase() as Method;
 
 			for (const route of routes) {
@@ -118,7 +124,7 @@ export function createRouter(namespace?: string): Router {
 				if (!match) continue;
 
 				const stream = await createDataStream();
-				const ctx = await createContext(request, match, stream);
+				const ctx = await createContext(r as any, request, info, match, stream);
 
 				return (
 					(await compose(middlewares, route.handler)(ctx)) ||
@@ -136,16 +142,16 @@ export function createRouter(namespace?: string): Router {
 	["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].forEach(
 		(method) => {
 			const lower = method.toLowerCase() as Lowercase<Method>;
-			(router as any)[lower] = <
+			(r as any)[lower] = <
 				P extends string | TypedURLPattern<any> | URLPattern,
 			>(
 				path: P,
 				handler: Handler<HandlerParams<P>>,
-			) => router.on(method as Method, path, handler);
+			) => r.on(method as Method, path, handler);
 		},
 	);
 
-	return router as Router;
+	return r as Router;
 }
 
 export * from "./middleware.ts";

@@ -12,7 +12,6 @@ export interface StreamOptions {
 export function chunked() {
 	const chunks = new ChunkedStream<string>();
 	const encoder = new TextEncoder();
-
 	return {
 		chunks,
 		stream: new ReadableStream<Uint8Array>({
@@ -53,8 +52,8 @@ export async function createDataStream(
 	return {
 		blob: stream,
 		chunks,
-		close: chunks.close,
-		error: chunks.error,
+		close: () => chunks.close(),
+		error: (e) => chunks.error(e),
 		response: new Response(stream, {
 			headers: {
 				"Content-Type": options.contentType,

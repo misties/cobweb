@@ -4,25 +4,32 @@
  */
 
 import { DataStream } from "./http.ts";
+import { Router } from "cobweb/routing";
 
 export interface Context<Params = Record<string, string>> {
 	readonly request: Request;
+	readonly info: Deno.ServeHandlerInfo<Deno.NetAddr>;
 	readonly url: URL;
 	readonly method: string;
 	readonly params: Params;
 	readonly pattern: URLPatternResult;
 	readonly stream: DataStream;
 	readonly signal: AbortSignal;
+	readonly router: Router;
 	state: Map<string | symbol, unknown>;
 }
 
 export async function createContext<P = Record<string, string>>(
+	router: Router,
 	request: Request,
+	info: Deno.ServeHandlerInfo<Deno.NetAddr>,
 	pattern: URLPatternResult,
 	stream: DataStream,
 ): Promise<Context<P>> {
 	return {
+		router,
 		request,
+		info,
 		url: new URL(request.url),
 		method: request.method,
 		params: (pattern.pathname.groups || {}) as P,

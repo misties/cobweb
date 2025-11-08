@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { Context } from "cobweb/routing";
 import { ChunkedStream } from "./stream.ts";
+import { $defer } from "./isolation.ts";
 
 // deno-fmt-ignore
 export const voidTags = new Set([
@@ -18,11 +20,11 @@ const ESC_LUT: Record<string, string> = {
 const ESC_RE = /[&<>"']/g;
 
 export const Fragment = Symbol("jsx.fragment") as any as JsxElement;
-export const Defer = Symbol("jsx.defer") as any as Component;
+export const Defer = Symbol("jsx.defer") as any as Component<DeferProps>;
 
 export type Component<P = Props> = (props: P) => JsxElement;
 
-export type JsxElement = (chunks: ChunkedStream<string>) => Promise<void>;
+export type JsxElement = (ctx: Context) => Promise<void>;
 
 type Props = {
 	children?: JsxElement;
@@ -30,9 +32,10 @@ type Props = {
 	[key: string]: unknown;
 };
 
-interface DeferProps {
-	fallback?: JsxElement;
+export interface DeferProps {
 	children: JsxElement;
+	authority?: string;
+	ttl?: number;
 }
 
 export const jsxEscape = (input: string): string =>
@@ -48,36 +51,35 @@ export const jsxAttr = (k: string, v: unknown) =>
 const emit = (chunks: ChunkedStream<string>, data: string) =>
 	void (chunks && !chunks.closed && chunks.write(data));
 
-async function render(
-	node: any,
-	chunks: ChunkedStream<string>,
-): Promise<void> {
+export async function render(node: any, ctx: Context): Promise<void> {
 	if (node == null || typeof node === "boolean") return;
 
-	if (typeof node === "string") return emit(chunks, node);
-	if (typeof node === "function") return node(chunks);
-	if (node instanceof Promise) return render(await node, chunks);
+	if (typeof node === "string") return emit(ctx.stream.chunks, node);
+	if (typeof node === "function") {
+		return node(ctx);
+	}
+	if (node instanceof Promise) return render(await node, ctx);
 
 	if (Array.isArray(node)) {
-		for (const item of node) await render(item, chunks);
+		for (const item of node) await render(item, ctx);
 		return;
 	}
 	if (typeof node === "object" && Symbol.asyncIterator in node) {
-		for await (const item of node) await render(item, chunks);
+		for await (const item of node) await render(item, ctx);
 		return;
 	}
 
-	emit(chunks, escape(String(node)));
+	emit(ctx.stream.chunks, jsxEscape(String(node)));
 }
 
 export function jsxTemplate(
 	template: string[],
 	...values: unknown[]
 ): JsxElement {
-	return async (chunks: ChunkedStream<string>) => {
+	return async (ctx: Context) => {
 		for (let i = 0; i < template.length; i++) {
-			emit(chunks, template[i]);
-			i < values.length && await render(values[i], chunks);
+			emit(ctx.stream.chunks, template[i]);
+			i < values.length && await render(values[i], ctx);
 		}
 	};
 }
@@ -90,67 +92,37 @@ export function jsx<P extends Props = Props>(
 	props ??= {} as P;
 	if (key !== undefined) props.key = key;
 
-	return async (chunks: ChunkedStream<string>) => {
+	return async (data: Context) => {
 		const { children, key: _, ...attrs } = props;
 
 		if (tag === Fragment) {
 			for (const child of Array.isArray(children) ? children : [children]) {
-				await render(child, chunks);
+				await render(child, data);
 				return;
 			}
 		}
 
 		if (tag === Defer) {
-			return defer(chunks, props as DeferProps);
+			return $defer(data, props as DeferProps);
 		}
 
 		if (typeof tag === "function") {
 			const result = await (tag as any)(props);
-			return render(result, chunks);
+			return render(result, data);
 		}
 
 		const isVoid = voidTags.has(tag);
 
-		emit(chunks, `<${tag}`);
+		emit(data.stream.chunks, `<${tag}`);
 		for (const name in attrs) {
 			const value = (attrs as any)[name];
-			emit(chunks, jsxAttr(name, value));
+			emit(data.stream.chunks, jsxAttr(name, value));
 		}
-		emit(chunks, isVoid ? "/>" : ">");
+		emit(data.stream.chunks, isVoid ? "/>" : ">");
 
 		if (!isVoid) {
-			await render(children, chunks);
-			emit(chunks, `</${tag}>`);
+			await render(children, data);
+			emit(data.stream.chunks, `</${tag}>`);
 		}
 	};
-}
-
-async function defer(
-	chunks: ChunkedStream<string>,
-	{ fallback, children }: DeferProps,
-) {
-	const id = `deferred-${Math.random().toString(36).slice(2, 10)}`;
-
-	emit(chunks, `<div id="${id}">`);
-	await render(fallback, chunks);
-	emit(chunks, `</div>`);
-
-	Promise.resolve(children).then(async (resolved) => {
-		const buffer = new ChunkedStream<string>();
-		await render(resolved, buffer);
-		buffer.close();
-
-		const content: string[] = [];
-		for await (const chunk of buffer) content.push(chunk);
-
-		emit(
-			chunks,
-			`<div id="${id}"><template shadowrootmode="open">${
-				content.join("")
-			}</template></div>`,
-		);
-	}).catch((err) => {
-		console.error("defer error:", err);
-		emit(chunks, `<div>⚠️ something went wrong</div>`);
-	});
 }
