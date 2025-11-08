@@ -1,0 +1,22 @@
+name: Lint
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+jobs:
+  deploy:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Build step
+        run: "deno lint"

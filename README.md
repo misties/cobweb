@@ -7,13 +7,13 @@ applications
 
 - [x] type-safe routing
 - [x] html streaming support
-- [x] jsx runtime
-- [x] isolated deferred rendering through iframes
+- [x] precompiled jsx runtime
 - [x] safely defer html streams
-- [x] server-sided token-based sessions
+- [x] deferred rendering through iframes
+- [x] tokenized routing-based isolation layer
 - [ ] global styles w/ iframe passthrough
 - [ ] iframe route lifecycle management
-- [ ] proper iframe state management
+- [ ] proper state management
 - [ ] intutive high-level apis
 - [ ] scoped css-in-js library
 - [ ] interactives structures and dynamic data visibility toggling via modern
