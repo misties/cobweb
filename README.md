@@ -1,13 +1,14 @@
 # 🕸️ cobweb
 
-a lightweight, tiny web framework for deno designed for dynamic no-js
-applications
+a lightweight, tiny web framework for deno tailored for dynamic
+no-js applications
 
 # status
 
 - [x] type-safe routing
-- [x] html streaming support
+- [x] http streaming
 - [x] precompiled jsx runtime
+- [x] support async generators in jsx
 - [x] safely defer html streams
 - [x] deferred rendering through iframes
 - [x] tokenized routing-based isolation layer
